@@ -13,7 +13,8 @@ class EditForm extends React.Component {
         this.setFormData = this.setFormData.bind(this);
     }
     componentDidMount() {
-        this.fetchData();
+        console.log("mount");
+        this.fetchData()
     }
 
     fetchData() {
@@ -21,37 +22,60 @@ class EditForm extends React.Component {
             method: "GET",
             dataType: 'json',
             success: function(data) {
+                var formData = {
+                    active: data.metaValues.Active,
+                    max_age: data.metaValues.AgeMaxDays,
+                    min_age: data.metaValues.AgeMinDays,
+                    stage: data.metaValues.Stage,
+                    subproject_id: data.metaValues.SubprojectID,
+                    test_name: data.metaValues.test_name,
+                    visit_label: data.metaValues.visitLabel,
+                    center_id: data.metaValues.forSite
+                };
                 this.setState({
                     Data: data,
-                    isLoaded: true
+                    isLoaded: true,
+                    metaValues: data.metaValues,
+                    formData: formData
                 });
             }.bind(this),
             error: function(error) {
                 console.error(error);
-            }
-        });
+                console.log("ERROR");
+                this.setState({
+                    error: 'An error occurred when loading the form!'
+                });
+            }.bind(this)
+        });;
     }
 
     render(){
+        // Waiting for data to load
+        if (!this.state.isLoaded) {
+            return (
+                <button className="btn-info has-spinner">
+                Loading
+                <span
+            className="glyphicon glyphicon-refresh glyphicon-refresh-animate">
+                </span>
+                </button>
+        );
+        }
+        console.log(this.state.Data);
+        console.log(this.state.formData);
         return (
             <div>
             <FormElement name="flag_form" onSubmit={this.handleSubmit}>
-    <h3 className="text-center">Edit Instrument</h3><br/>
-        <SelectElement
-        name="test_name"
-        label="Test Name"
-        options={this.state.Data.instruments}
-        onUserInput={this.setFormData}
-        ref="instrument"
-        value={this.state.formData.test_name}
-        />
-        <NumericElement name="min_age" label="Minimum Age" max={1000} onUserInput={this.setFormData}value={this.state.formData.min_age}/>
-        <NumericElement name="max_age" label="Maximum Age"max={1000} onUserInput={this.setFormData} value={this.state.formData.max_age}/>
-        <SelectElement name="active" label="Active" options={this.state.Data.active}onUserInput={this.setFormData} value={this.state.formData.active} />
-        <SelectElement name="stage" label="Stage" options={this.state.Data.stage}onUserInput={this.setFormData} value={this.state.formData.stage} />
-        <TextboxElement name="subproject_id" label="Subproject ID"onUserInput={this.setFormData} value={this.state.formData.subproject_id} />
+        <h3 className="text-center">Edit Instrument</h3><br/>
+        <TextboxElement name="id" label="ID" onUserInput={this.setFormData} ref="id" required={true} disabled={true} value={this.state.metaValues.ID}/>
+        <SelectElement name="test_name" label="Instrument" onUserInput={this.setFormData} options={this.state.Data.instruments} value={this.state.formData.test_name}/>
+        <NumericElement name="min_age" label="Minimum Age" min={0} max={100000} onUserInput={this.setFormData}value={this.state.formData.min_age}/>
+        <NumericElement name="max_age" label="Maximum Age"min={0} max={100000} onUserInput={this.setFormData} value={this.state.formData.max_age}/>
+        <SelectElement name="active" label="Active" options={{Y: "Y", N: "N"}}onUserInput={this.setFormData} value={this.state.formData.active} />
+        <SelectElement name="stage" label="Stage" options={{Screening: "Screening", Visit: "Visit", Complete: "Complete"}}onUserInput={this.setFormData} value={this.state.formData.stage} />
+        <SelectElement name="subproject_id" label="Subproject"onUserInput={this.setFormData} options={this.state.Data.subprojects}value={this.state.formData.subproject_id} />
         <SelectElement name="visit_label" label="Visit Label" options={this.state.Data.visitlabel}onUserInput={this.setFormData} value={this.state.formData.visit_label} />
-        <TextboxElement name="center_id" label="Center ID" onUserInput={this.setFormData} value={this.state.formData.center_id} />
+        <SelectElement name="center_id" label="Site" options={this.state.Data.centerID} onUserInput={this.setFormData} value={this.state.formData.center_id} />
         <ButtonElement label="Submit"/>
             </FormElement>
             </div>
@@ -75,10 +99,10 @@ class EditForm extends React.Component {
         let formObj = new FormData();
         for (let key in formData) {
             if (formData[key] !== "") {
-                console.log(key);
                 formObj.append(key, formData[key]);
             }
         }
+        console.log(formData);
         $.ajax({
             type: 'POST',
             url: this.props.action,
@@ -87,8 +111,6 @@ class EditForm extends React.Component {
             contentType: false,
             processData: false,
             success: function(response){
-                console.log(response.action);
-                console.log(response);
                 console.log("Success!");
             },
             error: function(err) {
@@ -114,4 +136,5 @@ EditForm.propTypes = {
     DataURL: React.PropTypes.string.isRequired,
     action: React.PropTypes.string.isRequired
 };
+
 export default EditForm;

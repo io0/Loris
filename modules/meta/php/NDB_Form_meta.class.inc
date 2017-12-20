@@ -16,72 +16,26 @@ public $hasWritePermission = false;
 
     function meta(){
     }
-
-    /**
-     * Build a list of media to display in Data Table
-     *
-     * @return bool
-     * @throws DatabaseException
-     */
-
-    function _setupVariables()
+    function edit()
     {
-        $user =& User::singleton();
-        // the base query
-        $query = " FROM test_battery";
+        $db      =& Database::singleton();
+        $factory = NDB_Factory::singleton();
+        $baseURL = $factory->settings()->getBaseURL();
 
-        // set the class variables
-        $this->columns
-            = [
-            'Test_name',
-            'AgeMinDays',
-            'AgeMaxDays',
-            'Active',
-            'Stage',
-            'SubprojectID',
-            'Visit_label',
-            'CenterID'
-        ];
+        $idMediaFile = $_GET['id'];
 
-        $this->query = $query;
-
-        /*if (!$user->hasPermission('access_all_profiles')) {
-            $site_arr     = implode(",", $user->getCenterIDs());
-            $this->query .= " AND c.CenterID IN (" . $site_arr . ")";
+        // Check if media file exists, if not redirect to /media/ page
+        if (isset($idMediaFile)) {
+            $result = $db->pselectRow(
+                "SELECT id FROM test_battery WHERE id = $idMediaFile",
+                []
+            );
+            if (count($result) < 1) {
+                header('Location: ' . $baseURL . '/meta/');
+            }
+        } else {
+            header('Location: ' . $baseURL . '/meta/');
         }
-
-        if (!$user->hasPermission("superuser")) {
-            $this->query .= " AND m.hide_file = FALSE";
-        }*/
-
-        $this->group_by = '';
-        $this->order_by = 'Test_name';
-        $this->headers = [
-            'Test_name',
-            'AgeMinDays',
-            'AgeMaxDays',
-            'Active',
-            'Stage',
-            'SubprojectID',
-            'Visit_label',
-            'CenterID',
-            'Edit Metadata'
-        ];
-
-        // Add Edit field if user has permissions
-        /*if ($this->hasWritePermission) {
-            array_push($this->headers, 'Edit Metadata');
-        }*/
-
-        $this->validFilters = [
-            'Test_name'
-        ];
-    }
-    function toJSON()
-    {
-        $result         = $this->toArray();
-        $result['form'] = $this->form->form;
-        return json_encode($result);
     }
         /**
      * Include the Tabs.js and index.js (entry point of the module)
@@ -96,10 +50,12 @@ public $hasWritePermission = false;
         return array_merge(
             $deps,
             array(
-             $baseURL . "/meta/js/index.js",
+             $baseURL . "/meta/js/editFormIndex.js",
             )
         );
     }
+
+
 }
 /*function meta()
 {

@@ -37,22 +37,14 @@ class InsertForm extends React.Component {
             <div>
             <FormElement name="flag_form" onSubmit={this.handleSubmit}>
     <h3 className="text-center">New Instrument</h3><br/>
-        <SelectElement
-        name="instrument"
-        label="Instrument"
-        options={this.state.Data.instruments}
-        onUserInput={this.setFormData}
-        ref="instrument"
-        value={this.state.formData.instrument}
-        />
-        <TextboxElement name="test_name" label="Test Name"onUserInput={this.setFormData}value={this.state.formData.test_name}/>
-        <NumericElement name="min_age" label="Minimum Age" max={1000} onUserInput={this.setFormData}value={this.state.formData.min_age}/>
-        <NumericElement name="max_age" label="Maximum Age"max={1000} onUserInput={this.setFormData} value={this.state.formData.max_age}/>
-        <SelectElement name="active" label="Active" options={"YN"}onUserInput={this.setFormData} value={this.state.formData.active} />
-        <TextboxElement name="stage" label="Stage" onUserInput={this.setFormData} value={this.state.formData.stage} />
-        <TextboxElement name="subproject_id" label="Subproject ID"onUserInput={this.setFormData} value={this.state.formData.subproject_id} />
-        <TextboxElement name="visit_label" label="Visit Label" onUserInput={this.setFormData} value={this.state.formData.visit_label} />
-        <TextboxElement name="center_id" label="Center ID" onUserInput={this.setFormData} value={this.state.formData.center_id} />
+        <SelectElement name="test_name" label="Instrument" onUserInput={this.setFormData} options={this.state.Data.instruments} value={this.state.formData.test_name}/>
+        <NumericElement name="min_age" label="Minimum Age" min={0} max={100000} onUserInput={this.setFormData}value={this.state.formData.min_age}/>
+        <NumericElement name="max_age" label="Maximum Age"min={0} max={100000} onUserInput={this.setFormData} value={this.state.formData.max_age}/>
+        <SelectElement name="active" label="Active" options={{Y: "Y", N: "N"}}onUserInput={this.setFormData} value={this.state.formData.active} />
+        <SelectElement name="stage" label="Stage" options={{Screening: "Screening", Visit: "Visit", Complete: "Complete"}}onUserInput={this.setFormData} value={this.state.formData.stage} />
+        <SelectElement name="subproject_id" label="Subproject"onUserInput={this.setFormData} options={this.state.Data.subprojects}value={this.state.formData.subproject_id} />
+        <SelectElement name="visit_label" label="Visit Label" options={this.state.Data.visitlabel}onUserInput={this.setFormData} value={this.state.formData.visit_label} />
+        <SelectElement name="center_id" label="Site" options={this.state.Data.centerID} onUserInput={this.setFormData} value={this.state.formData.center_id} />
         <ButtonElement label="Submit"/>
             </FormElement>
             </div>
@@ -76,7 +68,6 @@ class InsertForm extends React.Component {
         let formObj = new FormData();
         for (let key in formData) {
             if (formData[key] !== "") {
-                console.log(key);
                 formObj.append(key, formData[key]);
             }
         }
@@ -88,13 +79,11 @@ class InsertForm extends React.Component {
             contentType: false,
             processData: false,
             success: function(response){
-                console.log(response.action);
-                console.log(response);
                 console.log("Success!");
             },
             error: function(err) {
                 console.error(err);
-                let msg = err.responseJSON ? err.responseJSON.message : "Upload error!";
+                let msg = err.responseJSON ? err.responseJSON.message : "Insertion error!";
                 swal(msg, "", "error");
             }
         });

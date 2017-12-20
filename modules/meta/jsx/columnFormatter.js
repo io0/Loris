@@ -4,13 +4,12 @@ function formatColumn(column, cell, rowData, rowHeaders) {
     if (loris.hiddenHeaders.indexOf(column) > -1) {
         return null;
     }
-
+    //console.log(rowHeaders);
     // Create the mapping between rowHeaders and rowData in a row object.
     var row = {};
     rowHeaders.forEach(function(header, index) {
         row[header] = rowData[index];
     }, this);
-
     // create array of classes to be added to td tag
     var classes = [];
     if (row['Hide File'] === '1') {
@@ -19,28 +18,8 @@ function formatColumn(column, cell, rowData, rowHeaders) {
     // convert array to string, with blank space separator
     classes = classes.join(" ");
 
-    const hasWritePermission = loris.userHasPermission('media_write');
-    if (column === 'File Name' && hasWritePermission === true) {
-        var downloadURL = loris.BaseURL + "/media/ajax/FileDownload.php?File=" + row['File Name'];
-        return (
-            <td className= {classes}>
-                <a href={downloadURL} target="_blank" download={row['File Name']}>
-                    {cell}
-                </a>
-            </td>
-        );
-    }
-
-    if (column === 'Visit Label') {
-        if (row["Cand ID"] !== null && row["Session ID"]) {
-            var sessionURL = loris.BaseURL + "/instrument_list/?candID=" +
-                row["Cand ID"] + "&sessionID=" + row["Session ID"];
-            return <td className={classes}><a href={sessionURL}>{cell}</a></td>;
-        }
-    }
-
     if (column === 'Edit Metadata') {
-        var editURL = loris.BaseURL + "/media/edit/?id=" + row['Edit Metadata'];
+        var editURL = loris.BaseURL + "/meta/edit/?id=" + row['Edit Metadata'];
         return <td className={classes}><a href={editURL}>Edit</a></td>;
     }
 

@@ -1,84 +1,130 @@
 <?php
-ini_set('display_errors', 'On');
 
 if (isset($_GET['action'])) {
     $action = $_GET['action'];
     if ($action == "getData") {
         echo json_encode(getUploadFields());
-    } else if ($action == "upload") {
-        //$a = $_POST;
-        //echo json_encode(array("action" => "upload"));
-        upload();
+    } else if ($action == "insert") {
+        insert();
     } else if ($action == "edit") {
-        echo json_encode("EDEIT");
+        edit();
     }
 }
+function edit()
+{
+    $db   =& Database::singleton();
+    $user =& User::singleton();
+    if (!$user->hasPermission('media_write')) {
+        header("HTTP/1.1 403 Forbidden");
+        exit;
+    }
 
-function upload()
+    $idMeta = $_POST['idMeta'] ?? null;
+    $test_name = $_POST['test_name'] ?? null;
+    if ($test_name == 'null') $test_name = null;
+    $min_age    = isset($_POST['min_age']) ? $_POST['min_age'] : null;
+    if ($min_age == 'null') $min_age = null;
+    $max_age    = $_POST['max_age'] ?? null;
+    if ($max_age == 'null') $max_age = null;
+    $active     = $_POST['active'] ?? null;
+    if ($active == 'null') $active = null;
+    $stage = $_POST['stage'] ?? null;
+    if ($stage == 'null' or $stage == '') $stage = null;
+    $subproject_id   = $_POST['subproject_id'] ?? null;
+    if ($subproject_id == 'null') $subproject_id = null;
+    $visit_label = $_POST['visit_label'] ?? null;
+    if ($visit_label == 'null') $visit_label = null;
+    $center_id = $_POST['center_id'] ?? null;
+    if ($center_id == 'null') $center_id = null;
+    // If required fields are not set, show an error
+    if (!isset($test_name) || !isset($min_age) || !isset($max_age) ) {
+        showError("Please fill in all required fields!");
+        //return;
+    } else {
+        try {
+            $updateValues = [
+                'Test_name' => $test_name,
+                'AgeMinDays' => $min_age,
+                'AgeMaxDays' => $max_age,
+                'Active' => $active,
+                'Stage' => $stage,
+                'SubprojectID' => $subproject_id,
+                'Visit_label' => $visit_label,
+                'CenterID' => $center_id,
+            ];
+            $db->update('test_battery', $updateValues, ['ID' => $idMeta]);
+        } catch (DatabaseException $e) {
+            showError("Could not update the file. Please try again!");
+        }
+    }
+
+}
+function insert()
 {
     $db     =& Database::singleton();
     $config = NDB_Config::singleton();
     $user   =& User::singleton();
 
-    $test_name      = isset($_POST['test_name']) ? $_POST['test_name'] : null;
-    $min_age    = isset($_POST['min_age']) ? $_POST['min_age'] : null;
+    $test_name      = $_POST['test_name'] ?? null;
+    $min_age    = $_POST['min_age'] ?? null;
     $max_age    = $_POST['max_age'] ?? null;
-    $active     = isset($_POST['active']) ? $_POST['active'] : null;
-    $stage      = isset($_POST['stage']) ? $_POST['stage'] : null;
-    $subproject_id   = isset($_POST['subproject_id']) ? $_POST['subproject_id'] : null;
-    $visit_label = isset($_POST['visit_label']) ? $_POST['visit_label'] : null;
-    $center_id = isset($_POST['center_id']) ? $_POST['center_id'] : null;
+    $active     = $_POST['active'] ?? null;
+    $stage      = $_POST['stage'] ?? null;
+    $subproject_id   = $_POST['subproject_id'] ?? null;
+    $visit_label = $_POST['visit_label'] ?? null;
+    $center_id = $_POST['center_id'] ?? null;
     // If required fields are not set, show an error
-    if (!isset($test_name) || !isset($min_age) || !isset($max_age) || !isset($active) || !isset($stage) || !isset($subproject_id) || !isset($visit_label) || !isset($center_id) ) {
-        if (!isset($test_name)) {
-            showError("Please fill in all required fields!");
-        }
+    if (!isset($test_name) || !isset($min_age) || !isset($max_age)) {
+        showError("Please fill in all required fields!");
         //return;
-    }
-    if ($active == 0) {
-        $active = 'Y';
-    } else if ($active == 1){
-        $active = 'N';
-    }
-    $query = [
-        'Test_name' => $test_name,
-        'AgeMinDays'=> $min_age,
-        'AgeMaxDays'=> $max_age,
-        'Active'    => $active,
-        'Stage'     => $stage,
-        'SubprojectID'=> $subproject_id,
-        'Visit_label'=> $visit_label,
-        'CenterID'  => $center_id,
-    ];
+    } else {
+        $query = [
+            'Test_name' => $test_name,
+            'AgeMinDays' => $min_age,
+            'AgeMaxDays' => $max_age,
+            'Active' => $active,
+            'Stage' => $stage,
+            'SubprojectID' => $subproject_id,
+            'Visit_label' => $visit_label,
+            'CenterID' => $center_id,
+        ];
 
-    echo json_encode($query);
+        $db->insert('test_battery', $query);
+    }
     return;
 }
 
 function getUploadFields(){
     $db     =& Database::singleton();
-    $instruments = $db->pselect(
-        "SELECT Test_name FROM test_battery ORDER BY Test_name",
-        []
-    );
-    $active = $db->pselect(
-        "SELECT Active FROM test_battery ORDER BY Active",
-        []
-    );
-    $stage = $db->pselect(
-        "SELECT Stage FROM test_battery ORDER BY Stage",
-        []
-    );
-    $instrumentsList = toSelect($instruments, "Test_name", null);
-    $activeList = toSelect($active, "Active", null);
-    $stageList = toSelect($stage, "Stage", null);
+    $subprojectList = Utility::getSubprojectList();
+    //$subprojectList = array_values($subprojectList);
+    $instrumentsList = Utility::getAllInstruments();
+    $centerList = Utility::getSiteList();
     $visitList = Utility::getVisitList();
-
+    $metaData = null;
+    if (isset($_GET['idMeta'])) {
+        $idMeta = $_GET['idMeta'];
+        $metaData   = $db->pselectRow(
+            "SELECT " .
+            "Test_name as test_name, " .
+            "AgeMinDays, " .
+            "AgeMaxDays, " .
+            "Active, " .
+            "Stage, " .
+            "SubprojectID, " .
+            "Visit_label as visitLabel, " .
+            "CenterID as forSite, " .
+            "ID FROM test_battery " .
+            "WHERE ID = $idMeta",
+            []
+        );
+    }
     $result = [
+        'subprojects' => $subprojectList,
         'instruments' => $instrumentsList,
-        'active' => $activeList,
-        'stage' => $stageList,
         'visitlabel' => $visitList,
+        'centerID' => $centerList,
+        'metaValues' => $metaData,
     ];
     return $result;
 }
